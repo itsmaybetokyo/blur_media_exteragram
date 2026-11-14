@@ -4,9 +4,12 @@ from hook_utils import find_class
 __id__ = "blur_media"
 __name__ = "Blur Media"
 __description__ = "Blur all photos and videos in chats"
-__author__ = "@you"
-__version__ = "1.0.0"
-__min_version__ = "11.12.0"
+__author__ = "@itsmaybetokyo"
+__version__ = "1.0.1"
+__icon__ = "exteraPlugins/1"
+__category__ = "chats"
+__app_version__ = ">=12.5.1"
+__sdk_version__ = ">=1.4.3.6"
 
 
 class SpoilerHook(MethodHook):
@@ -17,6 +20,13 @@ class SpoilerHook(MethodHook):
 class BlurMediaPlugin(BasePlugin):
     def on_plugin_load(self):
         cls = find_class("org.telegram.messenger.MessageObject")
-        method = cls.getClass().getDeclaredMethod("hasMediaSpoilers")
-        method.setAccessible(True)
-        self.hook_method(method, SpoilerHook())
+        if not cls:
+            self.log("MessageObject not found")
+            return
+        found = [m.getName() for m in cls.getDeclaredMethods() if "poiler" in m.getName()]
+        self.log("spoiler methods: " + ", ".join(found))
+        try:
+            method = cls.getDeclaredMethod("hasMediaSpoilers")
+            self.hook_method(method, SpoilerHook())
+        except Exception as e:
+            self.log("hook failed: " + str(e))
