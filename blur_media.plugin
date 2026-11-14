@@ -5,16 +5,28 @@ __id__ = "blur_media"
 __name__ = "Blur Media"
 __description__ = "Blur all photos and videos in chats"
 __author__ = "@itsmaybetokyo"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __icon__ = "exteraPlugins/1"
 __category__ = "chats"
 __app_version__ = ">=12.5.1"
 __sdk_version__ = ">=1.4.3.6"
 
+TARGET = "hasMediaSpoilers"
+
 
 class SpoilerHook(MethodHook):
     def before_hooked_method(self, param):
         param.setResult(True)
+
+
+def declared_methods(cls):
+    # find_class may return a proxy; try it directly, then via getClass()
+    for conv in (lambda c: c, lambda c: c.getClass()):
+        try:
+            return list(conv(cls).getDeclaredMethods())
+        except Exception:
+            continue
+    return []
 
 
 class BlurMediaPlugin(BasePlugin):
@@ -23,10 +35,17 @@ class BlurMediaPlugin(BasePlugin):
         if not cls:
             self.log("MessageObject not found")
             return
-        found = [m.getName() for m in cls.getDeclaredMethods() if "poiler" in m.getName()]
-        self.log("spoiler methods: " + ", ".join(found))
-        try:
-            method = cls.getDeclaredMethod("hasMediaSpoilers")
-            self.hook_method(method, SpoilerHook())
-        except Exception as e:
-            self.log("hook failed: " + str(e))
+        methods = declared_methods(cls)
+        names = sorted(set(str(m.getName()) for m in methods if "poiler" in str(m.getName())))
+        self.log("total methods: " + str(len(methods)))
+        self.log("spoiler methods: " + ", ".join(names))
+        hooked = 0
+        for m in methods:
+            if str(m.getName()) == TARGET:
+                try:
+                    m.setAccessible(True)
+                    self.hook_method(m, SpoilerHook())
+                    hooked += 1
+                except Exception as e:
+                    self.log("hook failed: " + str(e))
+        self.log("hooked: " + str(hooked))
