@@ -8,17 +8,17 @@
     {
       "id": "blur_media",
       "name": "Blur Media",
-      "description": "Blur all photos and videos in chats",
+      "description": "Blur all photos and videos in chats. Quick toggle in side menu and chat menu.",
       "author": "@itsmaybetokyo",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "icon": "exteraPlugins/1",
       "app_version": ">=12.5.1",
       "sdk_version": ">=1.4.3.6",
       "category": "chats",
       "file": "blur_media.plugin",
-      "sha256": "2927e54ea8fcb9ee45a6ff5b81f6fb753cc6d828d9c7c253565040111f24c018",
-      "size": 1612,
-      "updated_at": "2026-11-14T03:28:27Z"
+      "sha256": "6e83adad83ff910c6d2b5d4d2da803b5be3cb7661c76e84047e3ece473b5c8d5",
+      "size": 2843,
+      "updated_at": "2026-11-14T03:41:15Z"
     }
   ]
 }
