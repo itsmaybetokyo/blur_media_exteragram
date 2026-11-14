@@ -1,22 +1,30 @@
-from base_plugin import BasePlugin, MethodHook
+from typing import Any, List
+
+from base_plugin import BasePlugin, MethodHook, MenuItemData, MenuItemType
 from hook_utils import find_class
+from ui.settings import Switch
 
 __id__ = "blur_media"
 __name__ = "Blur Media"
-__description__ = "Blur all photos and videos in chats"
+__description__ = "Blur all photos and videos in chats. Quick toggle in side menu and chat menu."
 __author__ = "@itsmaybetokyo"
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 __icon__ = "exteraPlugins/1"
 __category__ = "chats"
 __app_version__ = ">=12.5.1"
 __sdk_version__ = ">=1.4.3.6"
 
 TARGET = "hasMediaSpoilers"
+KEY = "blur_enabled"
 
 
 class SpoilerHook(MethodHook):
+    def __init__(self, plugin):
+        self.plugin = plugin
+
     def before_hooked_method(self, param):
-        param.setResult(True)
+        if self.plugin.is_on():
+            param.setResult(True)
 
 
 def declared_methods(cls):
@@ -31,21 +39,50 @@ def declared_methods(cls):
 
 class BlurMediaPlugin(BasePlugin):
     def on_plugin_load(self):
+        self.menu_ids = []
+        self.install_hook()
+        self.build_menus()
+
+    def is_on(self):
+        return bool(self.get_setting(KEY, True))
+
+    def install_hook(self):
         cls = find_class("org.telegram.messenger.MessageObject")
         if not cls:
             self.log("MessageObject not found")
             return
-        methods = declared_methods(cls)
-        names = sorted(set(str(m.getName()) for m in methods if "poiler" in str(m.getName())))
-        self.log("total methods: " + str(len(methods)))
-        self.log("spoiler methods: " + ", ".join(names))
         hooked = 0
-        for m in methods:
+        for m in declared_methods(cls):
             if str(m.getName()) == TARGET:
                 try:
                     m.setAccessible(True)
-                    self.hook_method(m, SpoilerHook())
+                    self.hook_method(m, SpoilerHook(self))
                     hooked += 1
                 except Exception as e:
                     self.log("hook failed: " + str(e))
         self.log("hooked: " + str(hooked))
+
+    def build_menus(self):
+        for item_id in self.menu_ids:
+            try:
+                self.remove_menu_item(item_id)
+            except Exception as e:
+                self.log("remove menu failed: " + str(e))
+        self.menu_ids = []
+        label = "Blur media: ON" if self.is_on() else "Blur media: OFF"
+        for menu_type in (MenuItemType.DRAWER_MENU, MenuItemType.CHAT_ACTION_MENU):
+            try:
+                item_id = self.add_menu_item(
+                    MenuItemData(menu_type=menu_type, text=label, on_click=self.toggle)
+                )
+                self.menu_ids.append(item_id)
+            except Exception as e:
+                self.log("add menu failed: " + str(e))
+
+    def toggle(self, context: Any):
+        self.set_setting(KEY, not self.is_on(), reload_settings=True)
+        self.log("blur is now " + ("ON" if self.is_on() else "OFF"))
+        self.build_menus()
+
+    def create_settings(self) -> List[Any]:
+        return [Switch(key=KEY, text="Blur all media", default=True)]
