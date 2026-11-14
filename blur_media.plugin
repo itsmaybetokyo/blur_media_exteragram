@@ -1,0 +1,22 @@
+from base_plugin import BasePlugin, MethodHook
+from hook_utils import find_class
+
+__id__ = "blur_media"
+__name__ = "Blur Media"
+__description__ = "Blur all photos and videos in chats"
+__author__ = "@you"
+__version__ = "1.0.0"
+__min_version__ = "11.12.0"
+
+
+class SpoilerHook(MethodHook):
+    def before_hooked_method(self, param):
+        param.setResult(True)
+
+
+class BlurMediaPlugin(BasePlugin):
+    def on_plugin_load(self):
+        cls = find_class("org.telegram.messenger.MessageObject")
+        method = cls.getClass().getDeclaredMethod("hasMediaSpoilers")
+        method.setAccessible(True)
+        self.hook_method(method, SpoilerHook())
